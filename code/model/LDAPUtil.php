@@ -2,6 +2,8 @@
 /**
  * Class LDAPUtil
  *
+ * TODO: Refactor to SAMLUtil and remove LDAP-only utilities?
+ *
  * Provides some commonly used functions for LDAP and SAML.
  */
 class LDAPUtil
@@ -40,7 +42,8 @@ class LDAPUtil
 
         return strtoupper($hex_guid_to_guid_str);
     }
-
+	
+	// TODO: Not used in SAML code.
     public static function str_to_hex_guid($str_guid, $escape = false)
     {
         $str_guid = str_replace('-', '', $str_guid);
@@ -68,7 +71,9 @@ class LDAPUtil
 
         return $octet_str;
     }
-
+	
+	
+	// TODO: Not used in SAML code.
     public static function bin_to_str_sid($binsid)
     {
         $hex_sid = bin2hex($binsid);
@@ -86,6 +91,7 @@ class LDAPUtil
         return 'S-' . $result;
     }
 
+	// TODO: Not used in SAML code.
     // Converts a little-endian hex-number to one, that 'hexdec' can convert
     public static function little_endian($hex)
     {
