@@ -25,3 +25,24 @@ SilverStripe\Core\Injector\Injector:
     constructor:
       namespace: 'ldap'
       defaultLifetime: 28800 # 8 hours
+
+SilverStripe\Dev\Backtrace:
+  ignore_function_args:
+    -
+      - 'SilverStripe\\ActiveDirectory\\Model\\LDAPGateway'
+      - 'authenticate'
+    -
+      - 'SilverStripe\\ActiveDirectory\\Model\\LDAPGateway'
+      - 'changePassword'
+    -
+      - 'SilverStripe\\ActiveDirectory\\Model\\LDAPGateway'
+      - 'resetPassword'
+    -
+      - 'SilverStripe\\ActiveDirectory\\Services\\LDAPService'
+      - 'authenticate'
+    -
+      - 'SilverStripe\\ActiveDirectory\\Services\\LDAPService'
+      - 'setPassword'
+    -
+      - 'SilverStripe\\ActiveDirectory\\Services\\LDAPService'
+      - 'passwordHistoryWorkaround'

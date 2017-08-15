@@ -3,7 +3,7 @@
 namespace SilverStripe\ActiveDirectory\Services;
 
 use OneLogin_Saml2_Constants;
-use SilverStripe\Core\Object;
+use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Control\Director;
 
 /**
@@ -19,8 +19,10 @@ use SilverStripe\Control\Director;
  *
  * @package activedirectory
  */
-class SAMLConfiguration extends Object
+class SAMLConfiguration
 {
+    use Injectable;
+
     /**
      * @var bool
      */
@@ -59,6 +61,9 @@ class SAMLConfiguration extends Object
         $spKeyPath = Director::is_absolute($sp['privateKey'])
             ? $sp['privateKey']
             : sprintf('%s/%s', BASE_PATH, $sp['privateKey']);
+
+        // set baseurl for SAML messages coming back to the SP
+        $conf['baseurl'] = $sp['entityId'];
 
         $conf['sp']['entityId'] = $sp['entityId'];
         $conf['sp']['assertionConsumerService'] = [
