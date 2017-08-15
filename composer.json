@@ -1,8 +1,8 @@
 {
-    "name": "silverstripe/activedirectory",
-    "description": "Adds Active Directory support to SilverStripe including user synchronisation and SSO/LDAP authentication",
+    "name": "silverstripe/saml",
+    "description": "Adds support to SilverStripe for SAML based SSO authentication",
     "type": "silverstripe-module",
-    "keywords": ["silverstripe", "ad", "active", "directory", "ldap", "sso", "saml"],
+    "keywords": ["silverstripe", "sso", "saml"],
     "license": "BSD-3-Clause",
     "authors": [
         {
@@ -12,6 +12,10 @@
         {
             "name": "Stig Lindqvist",
             "email": "stig@silverstripe.com"
+        },
+        {
+            "name": "Patrick Nelson",
+            "email": "pat@catchyour.com"
         }
     ],
     "require": {
