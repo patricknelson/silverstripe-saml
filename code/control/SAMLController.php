@@ -33,6 +33,7 @@ class SAMLController extends Controller
      */
     public function acs()
     {
+        /** @var OneLogin_Saml2_Auth $auth */
         $auth = Injector::inst()->get('SAMLHelper')->getSAMLAuth();
         $auth->processResponse();
 
@@ -53,12 +54,13 @@ class SAMLController extends Controller
         $decodedNameId = base64_decode($auth->getNameId());
         // check that the NameID is a binary string (which signals that it is a guid
         if (ctype_print($decodedNameId)) {
-            Form::messageForForm("SAMLLoginForm_LoginForm", "Name ID provided by IdP is not a binary GUID.", 'bad');
+            Form::messageForForm("SAMLLoginForm_LoginForm", "Name ID provided by IdP is not a binary GUID. ", 'bad');
             Session::save();
             return $this->getRedirect();
         }
 
         // transform the NameId to guid
+        // TODO: This validation is redundant as it is already being generated from a method controlled in this code.
         $guid = LDAPUtil::bin_to_str_guid($decodedNameId);
         if (!LDAPUtil::validGuid($guid)) {
             $errorMessage = "Not a valid GUID '{$guid}' recieved from server.";
@@ -70,14 +72,17 @@ class SAMLController extends Controller
 
         // Write a rudimentary member with basic fields on every login, so that we at least have something
         // if LDAP synchronisation fails.
+        // TODO: This is pointless at the moment since it is derived from a transient (and thus temporary) value, therefore
+        // TODO: this effectively would effectively recreate an empty member object on every single login.
         $member = Member::get()->filter('GUID', $guid)->limit(1)->first();
         if (!($member && $member->exists())) {
             $member = new Member();
             $member->GUID = $guid;
         }
 
+        // Fetch attributes passed from SSO/SAML server and apply them to our Member object, if possible.
         $attributes = $auth->getAttributes();
-
+        SS_Log::log('Fetched attributes: ' . print_r($attributes, true), SS_Log::DEBUG);
         foreach ($member->config()->claims_field_mappings as $claim => $field) {
             if (!isset($attributes[$claim][0])) {
                 SS_Log::log(
@@ -92,7 +97,7 @@ class SAMLController extends Controller
 
             $member->$field = $attributes[$claim][0];
         }
-
+        
         $member->SAMLSessionIndex = $auth->getSessionIndex();
 
         // This will trigger LDAP update through LDAPMemberExtension::memberLoggedIn.
