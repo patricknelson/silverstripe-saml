@@ -11,6 +11,9 @@ class LDAPUtil
     /**
      * Checks if the string is a valid guid in the format of A98C5A1E-A742-4808-96FA-6F409E799937
      *
+     * TODO: This validation is redundant as it is already being generated from a method controlled in this code (see below).
+     * TODO: Also it is potentially unnecessary since we're validating a GUID derived from a transient (and thus temporary) value.
+     *
      * @param $guid
      * @return bool
      */
@@ -22,9 +25,18 @@ class LDAPUtil
         return false;
     }
 
-    public static function bin_to_str_guid($object_guid)
+    /**
+     * Converts a binary string to a GUID.
+     *
+     * TODO: Consider removal, since this has tight bindings with code that may not prove to be useful (i.e. SAMLController member lookup on a transient value).
+     *
+     * @param   string  $bin_guid
+     * @return  string
+     */
+    public static function bin_to_str_guid($bin_guid)
     {
-        $hex_guid = bin2hex($object_guid);
+        $hex_guid = bin2hex($bin_guid);
+        $hex_guid = substr($hex_guid, 0, 32); // Cap at 128 bits, or 16 bytes * 2 bytes per hex char = 32 chars
         $hex_guid_to_guid_str = '';
         for ($k = 1; $k <= 4; ++$k) {
             $hex_guid_to_guid_str .= substr($hex_guid, 8 - 2 * $k, 2);
@@ -42,7 +54,7 @@ class LDAPUtil
 
         return strtoupper($hex_guid_to_guid_str);
     }
-	
+
 	// TODO: Not used in SAML code.
     public static function str_to_hex_guid($str_guid, $escape = false)
     {
@@ -71,8 +83,8 @@ class LDAPUtil
 
         return $octet_str;
     }
-	
-	
+
+
 	// TODO: Not used in SAML code.
     public static function bin_to_str_sid($binsid)
     {
