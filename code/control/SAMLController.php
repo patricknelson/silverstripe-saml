@@ -35,6 +35,10 @@ class SAMLController extends Controller
     {
         /** @var OneLogin_Saml2_Auth $auth */
         $auth = Injector::inst()->get('SAMLHelper')->getSAMLAuth();
+
+        // Required to workaround a *possible* bug/regression caused by php-saml package: https://github.com/onelogin/php-saml/pull/175#issuecomment-323235699
+        $auth->getSettings()->setBaseURL('');
+
         $auth->processResponse();
 
         $error = $auth->getLastErrorReason();
@@ -50,6 +54,7 @@ class SAMLController extends Controller
             Session::save();
             return $this->getRedirect();
         }
+
 
         $decodedNameId = base64_decode($auth->getNameId());
         // check that the NameID is a binary string (which signals that it is a guid
@@ -97,7 +102,7 @@ class SAMLController extends Controller
 
             $member->$field = $attributes[$claim][0];
         }
-        
+
         $member->SAMLSessionIndex = $auth->getSessionIndex();
 
         // This will trigger LDAP update through LDAPMemberExtension::memberLoggedIn.
