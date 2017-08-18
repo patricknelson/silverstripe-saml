@@ -1,10 +1,9 @@
 <?php
 /**
- * Class SAMLHelper
- *
- * SAMLHelper acts as a simple wrapper for the OneLogin implementation, so that we can configure
- * and inject it via the config system.
+ * This class acts as a simple wrapper for the OneLogin implementation, so that we can configure and inject it via the
+ * config system. See SAMLConfiguration and override it to customize how OneLogin_Saml2_Auth is configured.
  */
+
 class SAMLHelper extends Object
 {
     /**

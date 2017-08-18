@@ -1,9 +1,18 @@
 <?php
 /**
- * Class SAMLController
+ * This controller handles serving metadata requests for the IdP, as well as handling creating new users and logging
+ * them into SilverStripe after being authenticated at the IdP. You can also change how members are looked up in the
+ * database from after successful SAML authorization. To do so, extend this class and customize your YAML config:
  *
- * This controller handles serving metadata requests for the IdP, as well as handling
- * creating new users and logging them into SilverStripe after being authenticated at the IdP.
+ * your-saml-config.yml:
+ *
+    Injector:
+      SAMLController: YourSAMLController
+ *
+ * Then override ->getMemberFromAuth() and use exceptions to pass errors messages back to the form, if necessary.
+ *
+ * @author  Sean Harvey, sean@silverstripe.com
+ * @author	Patrick Nelson, pat@catchyour.com
  */
 class SAMLController extends Controller
 {
@@ -36,7 +45,7 @@ class SAMLController extends Controller
         /** @var OneLogin_Saml2_Auth $auth */
         $auth = Injector::inst()->get('SAMLHelper')->getSAMLAuth();
 
-        // Required to workaround a *possible* bug/regression caused by php-saml package: https://github.com/onelogin/php-saml/pull/175#issuecomment-323235699
+        // TODO: Required to workaround a *possible* bug/regression caused by php-saml package: https://github.com/onelogin/php-saml/pull/175#issuecomment-323235699
         $auth->getSettings()->setBaseURL('');
 
         $auth->processResponse();
@@ -55,34 +64,16 @@ class SAMLController extends Controller
             return $this->getRedirect();
         }
 
+        // Fetch member based on information in authorization response.
+        try {
+            $member = $this->getMemberFromAuth($auth);
 
-        $decodedNameId = base64_decode($auth->getNameId());
-        // check that the NameID is a binary string (which signals that it is a guid
-        if (ctype_print($decodedNameId)) {
-            Form::messageForForm("SAMLLoginForm_LoginForm", "Name ID provided by IdP is not a binary GUID. ", 'bad');
+        } catch(Exception $e) {
+            // Log and pass exception message back to form and
+            SS_Log::log('Error in ->getMemberFromAuth(): ' . $e->getMessage(), SS_Log::ERR);
+            Form::messageForForm("SAMLLoginForm_LoginForm", $e->getMessage(), 'bad');
             Session::save();
             return $this->getRedirect();
-        }
-
-        // transform the NameId to guid
-        // TODO: This validation is redundant as it is already being generated from a method controlled in this code.
-        $guid = LDAPUtil::bin_to_str_guid($decodedNameId);
-        if (!LDAPUtil::validGuid($guid)) {
-            $errorMessage = "Not a valid GUID '{$guid}' recieved from server.";
-            SS_Log::log($errorMessage, SS_Log::ERR);
-            Form::messageForForm("SAMLLoginForm_LoginForm", $errorMessage, 'bad');
-            Session::save();
-            return $this->getRedirect();
-        }
-
-        // Write a rudimentary member with basic fields on every login, so that we at least have something
-        // if LDAP synchronisation fails.
-        // TODO: This is pointless at the moment since it is derived from a transient (and thus temporary) value, therefore
-        // TODO: this effectively would effectively recreate an empty member object on every single login.
-        $member = Member::get()->filter('GUID', $guid)->limit(1)->first();
-        if (!($member && $member->exists())) {
-            $member = new Member();
-            $member->GUID = $guid;
         }
 
         // Fetch attributes passed from SSO/SAML server and apply them to our Member object, if possible.
@@ -164,5 +155,42 @@ class SAMLController extends Controller
 
         // fallback to redirect back to home page
         return $this->redirect(Director::absoluteBaseURL());
+    }
+
+    /**
+     * Return a member (or create a new one) based on the information provided by successful authorization response.
+     *
+     * @param OneLogin_Saml2_Auth $auth
+     * @throws Exception
+     * @return Member
+     */
+    protected function getMemberFromAuth(OneLogin_Saml2_Auth $auth)
+    {
+        // TODO: This is assuming the name ID is a base64 encoded binary string that isn't transient (see last TODO below).
+        $decodedNameId = base64_decode($auth->getNameId());
+        // check that the NameID is a binary string (which signals that it is a guid
+        if (ctype_print($decodedNameId)) {
+            throw new Exception("Name ID provided by IdP is not a binary GUID. ");
+        }
+
+        // transform the NameId to guid
+        // TODO: This validation is redundant as it is already being generated from a method controlled in this code.
+        $guid = LDAPUtil::bin_to_str_guid($decodedNameId);
+        if (!LDAPUtil::validGuid($guid)) {
+            throw new Exception("Not a valid GUID '{$guid}' recieved from server.");
+        }
+
+        // Write a rudimentary member with basic fields on every login, so that we at least have something
+        // if LDAP synchronisation fails.
+        // TODO: This is pointless at the moment since it is derived from a transient (and thus temporary) value, therefore
+        // TODO: this effectively would effectively recreate an empty member object on every single login.
+        /** @var Member $member */
+        $member = Member::get()->filter('GUID', $guid)->limit(1)->first();
+        if (!($member && $member->exists())) {
+            $member = new Member();
+            $member->GUID = $guid;
+        }
+
+        return $member;
     }
 }
