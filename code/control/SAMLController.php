@@ -7,7 +7,8 @@
  * your-saml-config.yml:
  *
     Injector:
-      SAMLController: YourSAMLController
+      SAMLController:
+        class: YourSAMLController
  *
  * Then override ->getMemberFromAuth() and use exceptions to pass errors messages back to the form, if necessary.
  *
@@ -96,6 +97,7 @@ class SAMLController extends Controller
 
         $member->SAMLSessionIndex = $auth->getSessionIndex();
 
+        // TODO: This documentation is out of date.
         // This will trigger LDAP update through LDAPMemberExtension::memberLoggedIn.
         // The LDAP update will also write the Member record. We shouldn't write before
         // calling this, as any onAfterWrite hooks that attempt to update LDAP won't

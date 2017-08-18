@@ -1,7 +1,7 @@
 <?php
 /**
  * Provides some potentially reusable functions for SAML.
- * 
+ *
  * @author  Sean Harvey, sean@silverstripe.com
  */
 class SAMLUtil
