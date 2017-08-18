@@ -1,12 +1,10 @@
 <?php
 /**
- * Class LDAPUtil
- *
- * TODO: Refactor to SAMLUtil and remove LDAP-only utilities?
- *
- * Provides some commonly used functions for LDAP and SAML.
+ * Provides some potentially reusable functions for SAML.
+ * 
+ * @author  Sean Harvey, sean@silverstripe.com
  */
-class LDAPUtil
+class SAMLUtil
 {
     /**
      * Checks if the string is a valid guid in the format of A98C5A1E-A742-4808-96FA-6F409E799937

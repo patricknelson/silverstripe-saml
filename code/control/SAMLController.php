@@ -175,8 +175,8 @@ class SAMLController extends Controller
 
         // transform the NameId to guid
         // TODO: This validation is redundant as it is already being generated from a method controlled in this code.
-        $guid = LDAPUtil::bin_to_str_guid($decodedNameId);
-        if (!LDAPUtil::validGuid($guid)) {
+        $guid = SAMLUtil::bin_to_str_guid($decodedNameId);
+        if (!SAMLUtil::validGuid($guid)) {
             throw new Exception("Not a valid GUID '{$guid}' recieved from server.");
         }
 
