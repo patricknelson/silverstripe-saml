@@ -15,7 +15,9 @@ class SAMLHelper extends Object
     ];
 
     /**
-     * @var SAMLConfService
+     * Configured by Injector. See SAMLConfiguration.php for details on how to customize.
+     *
+     * @var SAMLConfiguration
      */
     public $SAMLConfService;
 

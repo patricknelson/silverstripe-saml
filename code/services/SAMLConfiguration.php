@@ -9,6 +9,16 @@
  * how to exchange certificates and which endpoints to use (e.g. see SAMLConfiguration::metadata).
  *
  * https://syncplicity.zendesk.com/hc/en-us/articles/202392814-Single-sign-on-with-ADFS
+ *
+ * NOTE: If you want to provide more advanced configuration or override what is already defined here, simply extend this
+ * class and place this in your site YAML configuration for the injector
+ *
+ * your-saml-config.yml:
+ *
+    Injector:
+      SAMLConfService: YourSAMLConfigurationClass
+ *
+ * Then override the ->asArray() method to do as you wish.
  */
 class SAMLConfiguration extends Object
 {
@@ -46,13 +56,14 @@ class SAMLConfiguration extends Object
         $sp = $this->config()->get('SP');
 
         // set baseurl for SAML messages coming back to the SP
+        // TODO: While it's common for entityId to be the same as the application base URL, they technically may not be the same.
         $conf['baseurl'] = $sp['entityId'];
 
         $spCertPath = Director::is_absolute($sp['x509cert']) ? $sp['x509cert'] : sprintf('%s/%s', BASE_PATH, $sp['x509cert']);
         $spKeyPath = Director::is_absolute($sp['privateKey']) ? $sp['privateKey'] : sprintf('%s/%s', BASE_PATH, $sp['privateKey']);
         $conf['sp']['entityId'] = $sp['entityId'];
         $conf['sp']['assertionConsumerService'] = [
-            'url' => $sp['entityId'] . '/saml/acs',
+            'url' => rtrim(Director::absoluteBaseURL(), '/') . '/saml/acs',
             'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_POST
         ];
         $conf['sp']['NameIDFormat'] = isset($sp['nameIdFormat']) ? $sp['nameIdFormat'] : OneLogin_Saml2_Constants::NAMEID_TRANSIENT;
