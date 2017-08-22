@@ -97,14 +97,8 @@ class SAMLController extends Controller
 
         $member->SAMLSessionIndex = $auth->getSessionIndex();
 
-        // TODO: This documentation is out of date.
-        // This will trigger LDAP update through LDAPMemberExtension::memberLoggedIn.
-        // The LDAP update will also write the Member record. We shouldn't write before
-        // calling this, as any onAfterWrite hooks that attempt to update LDAP won't
-        // have the Username field available yet for new Member records, and fail.
-        // Both SAML and LDAP identify Members by the GUID field.
+        // Log member in and redirect back to initial desired URL.
         $member->logIn();
-
         return $this->getRedirect();
     }
 

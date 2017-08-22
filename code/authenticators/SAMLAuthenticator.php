@@ -16,16 +16,11 @@
 class SAMLAuthenticator extends Authenticator
 {
     /**
-     * @var string
-     */
-    private $name = 'SAML';
-
-    /**
      * @return string
      */
     public static function get_name()
     {
-        return Config::inst()->get('SAMLAuthenticator', 'name');
+        return static::config()->get('name');
     }
 
     /**

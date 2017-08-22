@@ -17,6 +17,7 @@ Security:
 Injector:
   SAMLConfService: SAMLConfiguration
 
+# Override this in your YAML config to change the title on the login page.
 SAMLAuthenticator:
   name: "SAML"
 
