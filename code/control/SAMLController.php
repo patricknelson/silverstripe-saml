@@ -18,6 +18,13 @@
 class SAMLController extends Controller
 {
     /**
+     * Cache the name of the form that this controller needs to pass error messages to. May vary depending on injected classes.
+     *
+     * @var string
+     */
+    protected $formName;
+
+    /**
      * @var array
      */
     private static $allowed_actions = [
@@ -54,13 +61,13 @@ class SAMLController extends Controller
         $error = $auth->getLastErrorReason();
         if (!empty($error)) {
             SS_Log::log($error, SS_Log::ERR);
-            Form::messageForForm("SAMLLoginForm_LoginForm", "Authentication error: '{$error}'", 'bad');
+            Form::messageForForm($this->getFormName(), "Authentication error: '{$error}'", 'bad');
             Session::save();
             return $this->getRedirect();
         }
 
         if (!$auth->isAuthenticated()) {
-            Form::messageForForm("SAMLLoginForm_LoginForm", _t('Member.ERRORWRONGCRED'), 'bad');
+            Form::messageForForm($this->getFormName(), _t('Member.ERRORWRONGCRED'), 'bad');
             Session::save();
             return $this->getRedirect();
         }
@@ -72,7 +79,7 @@ class SAMLController extends Controller
         } catch(Exception $e) {
             // Log and pass exception message back to form and
             SS_Log::log('Error in ->getMemberFromAuth(): ' . $e->getMessage(), SS_Log::ERR);
-            Form::messageForForm("SAMLLoginForm_LoginForm", $e->getMessage(), 'bad');
+            Form::messageForForm($this->getFormName(), $e->getMessage(), 'bad');
             Session::save();
             return $this->getRedirect();
         }
@@ -188,5 +195,20 @@ class SAMLController extends Controller
         }
 
         return $member;
+    }
+
+    /**
+     * Generates the correct name for the form that this controller needs to drop errors into.
+     *
+     * @return string
+     */
+    public function getFormName() {
+        if ($this->formName) return $this->formName;
+
+        // Form instance is controlled by the authenticator, so let's use the injector to instantiate that first before
+        // statically calling the ::get_login_form() method so we can ensure we get it off the appropriate instance.
+        $authenticator = SAMLAuthenticator::create();
+        $form = $authenticator::get_login_form($this);
+        return $this->formName = $form->FormName();
     }
 }
