@@ -24,6 +24,13 @@ class SAMLController extends Controller
      */
     protected $formName;
 
+	/**
+	 * Retain the SAML authenticator for debugging requests/responses.
+	 *
+	 * @var OneLogin_Saml2_Auth
+	 */
+    protected $samlAuth;
+
     /**
      * @var array
      */
@@ -50,8 +57,7 @@ class SAMLController extends Controller
      */
     public function acs()
     {
-        /** @var OneLogin_Saml2_Auth $auth */
-        $auth = Injector::inst()->get('SAMLHelper')->getSAMLAuth();
+        $auth = $this->getSamlAuth();
 
         // TODO: Required to workaround a *possible* bug/regression caused by php-saml package: https://github.com/onelogin/php-saml/pull/175#issuecomment-323235699
         $auth->getSettings()->setBaseURL('');
@@ -60,8 +66,9 @@ class SAMLController extends Controller
 
         $error = $auth->getLastErrorReason();
         if (!empty($error)) {
-            SS_Log::log($error, SS_Log::ERR);
-            Form::messageForForm($this->getFormName(), "Authentication error: '{$error}'", 'bad');
+        	$message = "Authentication error: '{$error}'";
+            $this->log($error);
+            Form::messageForForm($this->getFormName(), $message, 'bad');
             Session::save();
             return $this->getRedirect();
         }
@@ -74,11 +81,11 @@ class SAMLController extends Controller
 
         // Fetch member based on information in authorization response.
         try {
-            $member = $this->getMemberFromAuth($auth);
+            $member = $this->getMemberFromAuth();
 
         } catch(Exception $e) {
             // Log and pass exception message back to form and
-            SS_Log::log('Error in ->getMemberFromAuth(): ' . $e->getMessage(), SS_Log::ERR);
+            $this->log('Error in ->getMemberFromAuth(): ' . $e->getMessage());
             Form::messageForForm($this->getFormName(), $e->getMessage(), 'bad');
             Session::save();
             return $this->getRedirect();
@@ -86,16 +93,13 @@ class SAMLController extends Controller
 
         // Fetch attributes passed from SSO/SAML server and apply them to our Member object, if possible.
         $attributes = $auth->getAttributes();
-        SS_Log::log('Fetched attributes: ' . print_r($attributes, true), SS_Log::DEBUG);
+        $this->log('Fetched attributes: ' . print_r($attributes, true), SS_Log::DEBUG);
         foreach ($member->config()->claims_field_mappings as $claim => $field) {
             if (!isset($attributes[$claim][0])) {
-                SS_Log::log(
-                    sprintf(
-                        'Claim rule \'%s\' configured in LDAPMember.claims_field_mappings, but wasn\'t passed through. Please check IdP claim rules.',
-                        $claim
-                    ), SS_Log::WARN
-                );
-
+				$this->log(sprintf(
+					'Claim rule \'%s\' configured in LDAPMember.claims_field_mappings, but wasn\'t passed through. Please check IdP claim rules.',
+					$claim
+				), SS_Log::WARN);
                 continue;
             }
 
@@ -117,8 +121,8 @@ class SAMLController extends Controller
     public function metadata()
     {
         try {
-            $auth = Injector::inst()->get('SAMLHelper')->getSAMLAuth();
-            $settings = $auth->getSettings();
+			$auth = $this->getSamlAuth();
+			$settings = $auth->getSettings();
             $metadata = $settings->getSPMetadata();
             $errors = $settings->validateMetadata($metadata);
             if (empty($errors)) {
@@ -131,7 +135,7 @@ class SAMLController extends Controller
                 );
             }
         } catch (Exception $e) {
-            SS_Log::log($e->getMessage(), SS_Log::ERR);
+            $this->log($e->getMessage());
             echo $e->getMessage();
         }
     }
@@ -163,12 +167,13 @@ class SAMLController extends Controller
     /**
      * Return a member (or create a new one) based on the information provided by successful authorization response.
      *
-     * @param OneLogin_Saml2_Auth $auth
      * @throws Exception
      * @return Member
      */
-    protected function getMemberFromAuth(OneLogin_Saml2_Auth $auth)
+    protected function getMemberFromAuth()
     {
+		$auth = $this->getSamlAuth();
+
         // TODO: This is assuming the name ID is a base64 encoded binary string that isn't transient (see last TODO below).
         $decodedNameId = base64_decode($auth->getNameId());
         // check that the NameID is a binary string (which signals that it is a guid
@@ -202,7 +207,8 @@ class SAMLController extends Controller
      *
      * @return string
      */
-    public function getFormName() {
+    public function getFormName()
+    {
         if ($this->formName) return $this->formName;
 
         // Form instance is controlled by the authenticator, so let's use the injector to instantiate that first before
@@ -211,4 +217,28 @@ class SAMLController extends Controller
         $form = $authenticator::get_login_form($this);
         return $this->formName = $form->FormName();
     }
+
+	/**
+	 * Returns current SAML authorization instance to assist with debugging requests/responses.
+	 *
+	 * @return OneLogin_Saml2_Auth
+	 */
+    public function getSamlAuth()
+	{
+		if (!$this->samlAuth) {
+			$this->samlAuth = Injector::inst()->get('SAMLHelper')->getSAMLAuth();
+		}
+		return $this->samlAuth;
+	}
+
+	/**
+	 * Central logging. If desired, override this to provide more detailed logging.
+	 *
+	 * @param	string	$message	Message to log.
+	 * @param	int		$level		Log level pulled from SS_Log constants.
+	 */
+	protected function log($message, $level = SS_Log::ERR)
+	{
+		SS_Log::log($message, $level);
+	}
 }
