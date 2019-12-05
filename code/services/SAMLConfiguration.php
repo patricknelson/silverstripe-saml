@@ -22,7 +22,7 @@
  *
  * @author  Sean Harvey, sean@silverstripe.com
  */
-class SAMLConfiguration extends Object
+class SAMLConfiguration extends SS_Object
 {
     /**
      * @var bool

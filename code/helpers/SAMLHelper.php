@@ -4,7 +4,7 @@
  * config system. See SAMLConfiguration and override it to customize how OneLogin_Saml2_Auth is configured.
  */
 
-class SAMLHelper extends Object
+class SAMLHelper extends SS_Object
 {
     /**
      * @var array
